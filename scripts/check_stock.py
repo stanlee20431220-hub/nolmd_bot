@@ -4,8 +4,10 @@ import re
 import sys
 import urllib.request
 import urllib.error
+from http.cookiejar import CookieJar
 from datetime import datetime, timezone, timedelta
 
+HOME_URL = "https://nolmdshop.com/"
 PRODUCT_URL = "https://nolmdshop.com/product/%EB%91%90%EC%82%B0%EB%B2%A0%EC%96%B4%EC%8A%A4-%ED%82%A4%EC%A6%88-%EC%9C%A0%EB%8B%88%ED%8F%BC%EC%9B%90%EC%A0%95/1615/category/30/display/1/"
 HISTORY_FILE = "data/stock_history.json"
 
@@ -14,21 +16,25 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
     "Accept-Encoding": "identity",
-    "Referer": "https://nolmdshop.com/",
     "Connection": "keep-alive",
 }
 
 
-def fetch_html(url):
-    req = urllib.request.Request(url, headers=HEADERS)
+def build_opener():
+    jar = CookieJar()
+    return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar)), jar
+
+
+def fetch(opener, url, referer=None):
+    headers = dict(HEADERS)
+    if referer:
+        headers["Referer"] = referer
+    req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            status = resp.status
-            html = resp.read().decode("utf-8", errors="ignore")
-            return status, html
+        with opener.open(req, timeout=30) as resp:
+            return resp.status, resp.read().decode("utf-8", errors="ignore")
     except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="ignore")
-        return e.code, body
+        return e.code, e.read().decode("utf-8", errors="ignore")
 
 
 def extract_stock(html):
@@ -63,10 +69,24 @@ def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 
-    status, html = fetch_html(PRODUCT_URL)
-    print(f"HTTP status: {status}, length: {len(html)}")
+    opener, jar = build_opener()
+
+    # Step 1: visit homepage first to receive session cookies, like a real browser would.
+    home_status, _ = fetch(opener, HOME_URL)
+    print(f"Home page status: {home_status}, cookies received: {len(jar)}")
+
+    # Step 2: visit product page with the session cookies now attached.
+    status, html = fetch(opener, PRODUCT_URL, referer=HOME_URL)
+    print(f"Product page status: {status}, length: {len(html)}")
 
     current = extract_stock(html)
+
+    if current is None:
+        # Retry once more in case one extra hop is needed to fully establish the session.
+        status2, html2 = fetch(opener, PRODUCT_URL, referer=PRODUCT_URL)
+        print(f"Retry status: {status2}, length: {len(html2)}")
+        current = extract_stock(html2)
+
     if current is None:
         snippet = html[:500].replace("\n", " ")
         print("option_stock_data NOT FOUND. Response snippet:")
@@ -75,7 +95,7 @@ def main():
             send_telegram(
                 token,
                 chat_id,
-                f"[\uc7ac\uace0 \ud655\uc778 \uc624\ub958] HTTP {status}\uc73c\ub85c \uc751\ub2f5\ubc1b\uc558\uc73c\ub098 \uc7ac\uace0 \ub370\uc774\ud0a4\ub298 \ubaa8\ub976 \uc74c",
+                "[\uc7ac\uace0 \ud655\uc778 \uc624\ub958] \uc0c1\ud488 \ud398\uc774\uc9c0\uc5d0\uc11c \uc7ac\uace0 \ub370\uc774\ud0a4\ub298 \ubaa8\ub976 \uc74c",
             )
         sys.exit(1)
 
