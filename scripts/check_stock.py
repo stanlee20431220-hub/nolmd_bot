@@ -32,7 +32,7 @@ def collect_product_links(page):
 
         last_count = -1
         rounds_without_growth = 0
-        for _ in range(40):
+        for _ in range(150):
             hrefs = page.eval_on_selector_all(
                 'a[href*="/product/"]', "els => els.map(e => e.href)"
             )
@@ -53,11 +53,16 @@ def collect_product_links(page):
             else:
                 rounds_without_growth += 1
 
-            if rounds_without_growth >= 6:
+            if rounds_without_growth >= 8:
                 break
 
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            page.wait_for_timeout(1200)
+            try:
+                page.mouse.wheel(0, 4000)
+            except Exception:
+                page.evaluate("window.scrollBy(0, 4000)")
+            page.wait_for_timeout(700)
+
+        print(f"  - {url}: {len(links)}개 누적 (카테고리별 진행)")
     return sorted(links)
 
 def get_stock_for_product(page, url):
@@ -136,7 +141,7 @@ def main():
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
-        page = browser.new_page()
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
 
         product_urls = collect_product_links(page)
         print(f"Found {len(product_urls)} products across categories (마킹키트 제외)")
