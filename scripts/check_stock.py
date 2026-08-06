@@ -150,9 +150,7 @@ def main():
 
             if option_lines:
                 price_str = f" ({fmt_won(price)})" if price is not None else ""
-                change_blocks.append(f"■ {name}{price_str}
-" + "
-".join(option_lines))
+                change_blocks.append(f"■ {name}{price_str}\n" + "\n".join(option_lines))
 
             if price is not None and prev_price is not None and price != prev_price:
                 price_change_lines.append(
@@ -167,38 +165,23 @@ def main():
     now = datetime.now(kst).strftime("%Y-%m-%d %H:%M KST")
 
     header = (
-        f"[전상품 재고 확인] {now}
-"
+        f"[전상품 재고 확인] {now}\n"
         f"확인된 상품: {len(current_products)}개"
     )
 
     messages = [header]
     if change_blocks:
-        messages.append("[재고 변동]
-
-" + "
-
-".join(change_blocks))
+        messages.append("[재고 변동]\n\n" + "\n\n".join(change_blocks))
     if price_change_lines:
-        messages.append("[가격 변동]
-" + "
-".join(price_change_lines))
+        messages.append("[가격 변동]\n" + "\n".join(price_change_lines))
     if soldout_lines:
-        messages.append("[품절 상품]
-" + "
-".join(soldout_lines))
+        messages.append("[품절 상품]\n" + "\n".join(soldout_lines))
     if warning_lines:
-        messages.append("[50개 미만 재고 경고]
-" + "
-".join(warning_lines))
+        messages.append("[50개 미만 재고 경고]\n" + "\n".join(warning_lines))
     if error_lines:
-        messages.append("[오류]
-" + "
-".join(error_lines))
+        messages.append("[오류]\n" + "\n".join(error_lines))
 
-    full_message = "
-
-".join(messages)
+    full_message = "\n\n".join(messages)
     print(full_message)
 
     if token and chat_id:
