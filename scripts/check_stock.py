@@ -20,21 +20,19 @@ LOW_STOCK_THRESHOLD = 50
 PRODUCT_URL_RE = re.compile(r"/product/([^/]+/\d+)/")
 EXCLUDE_KEYWORDS = ["마킹키트"]
 
-
 def is_excluded(url):
     decoded = urllib.parse.unquote(url)
     return any(kw in decoded for kw in EXCLUDE_KEYWORDS)
-
 
 def collect_product_links(page):
     links = set()
     for url in CATEGORY_URLS:
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(1500)
 
-        prev_count = -1
-        stable_rounds = 0
-        for _ in range(80):
+        last_count = -1
+        rounds_without_growth = 0
+        for _ in range(40):
             hrefs = page.eval_on_selector_all(
                 'a[href*="/product/"]', "els => els.map(e => e.href)"
             )
@@ -48,23 +46,19 @@ def collect_product_links(page):
                     continue
                 links.add(canonical)
 
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            page.wait_for_timeout(600)
-
-            at_bottom = page.evaluate(
-                "() => window.scrollY + window.innerHeight >= document.body.scrollHeight - 5"
-            )
             current_count = len(links)
-            if current_count == prev_count:
-                stable_rounds += 1
+            if current_count > last_count:
+                last_count = current_count
+                rounds_without_growth = 0
             else:
-                stable_rounds = 0
-            prev_count = current_count
+                rounds_without_growth += 1
 
-            if at_bottom and stable_rounds >= 2:
+            if rounds_without_growth >= 6:
                 break
-    return sorted(links)
 
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(1200)
+    return sorted(links)
 
 def get_stock_for_product(page, url):
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
@@ -98,13 +92,11 @@ def get_stock_for_product(page, url):
         result[v["option_value"]] = v["stock_number"]
     return result, name, price
 
-
 def send_telegram(token, chat_id, text):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = json.dumps({"chat_id": chat_id, "text": text}).encode("utf-8")
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     urllib.request.urlopen(req, timeout=15)
-
 
 def send_telegram_chunked(token, chat_id, text, limit=3500):
     if len(text) <= limit:
@@ -119,7 +111,6 @@ def send_telegram_chunked(token, chat_id, text, limit=3500):
     if chunk.strip():
         send_telegram(token, chat_id, chunk)
 
-
 def load_previous():
     if not os.path.exists(HISTORY_FILE):
         return {}
@@ -127,10 +118,8 @@ def load_previous():
         saved = json.load(f)
     return saved.get("products", {})
 
-
 def fmt_won(v):
     return f"{v:,}원"
-
 
 def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -230,7 +219,6 @@ def main():
             ensure_ascii=False,
             indent=2,
         )
-
 
 if __name__ == "__main__":
     main()
