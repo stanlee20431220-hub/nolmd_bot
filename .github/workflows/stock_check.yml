@@ -1,0 +1,37 @@
+name: Stock Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+    - cron: '0 9 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run stock check
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/check_stock.py
+
+      - name: Commit updated history
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "actions@github.com"
+          git add data/stock_history.json
+          git diff --quiet --cached || git commit -m "Update stock history [skip ci]"
+          git push
