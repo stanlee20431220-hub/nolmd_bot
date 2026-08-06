@@ -3,22 +3,38 @@ import os
 import re
 import sys
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone, timedelta
 
 PRODUCT_URL = "https://nolmdshop.com/product/%EB%91%90%EC%82%B0%EB%B2%A0%EC%96%B4%EC%8A%A4-%ED%82%A4%EC%A6%88-%EC%9C%A0%EB%8B%88%ED%8F%BC%EC%9B%90%EC%A0%95/1615/category/30/display/1/"
 HISTORY_FILE = "data/stock_history.json"
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "identity",
+    "Referer": "https://nolmdshop.com/",
+    "Connection": "keep-alive",
+}
+
 
 def fetch_html(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read().decode("utf-8", errors="ignore")
+    req = urllib.request.Request(url, headers=HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            status = resp.status
+            html = resp.read().decode("utf-8", errors="ignore")
+            return status, html
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        return e.code, body
 
 
 def extract_stock(html):
     m = re.search(r"option_stock_data\s*=\s*(\{.*?\});", html, re.S)
     if not m:
-        raise RuntimeError("option_stock_data not found on page")
+        return None
     data = json.loads(m.group(1))
     result = {}
     for _, v in data.items():
@@ -44,8 +60,25 @@ def load_previous():
 
 
 def main():
-    html = fetch_html(PRODUCT_URL)
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+
+    status, html = fetch_html(PRODUCT_URL)
+    print(f"HTTP status: {status}, length: {len(html)}")
+
     current = extract_stock(html)
+    if current is None:
+        snippet = html[:500].replace("\n", " ")
+        print("option_stock_data NOT FOUND. Response snippet:")
+        print(snippet)
+        if token and chat_id:
+            send_telegram(
+                token,
+                chat_id,
+                f"[\uc7ac\uace0 \ud655\uc778 \uc624\ub958] HTTP {status}\uc73c\ub85c \uc751\ub2f5\ubc1b\uc558\uc73c\ub098 \uc7ac\uace0 \ub370\uc774\ud0a4\ub298 \ubaa8\ub976 \uc74c",
+            )
+        sys.exit(1)
+
     prev_stock, saved = load_previous()
 
     kst = timezone(timedelta(hours=9))
@@ -66,8 +99,6 @@ def main():
 
     print(message)
 
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
     if token and chat_id:
         send_telegram(token, chat_id, message)
     else:
