@@ -26,13 +26,14 @@ def is_excluded(url):
 
 def collect_product_links(page):
     links = set()
+    page.mouse.move(700, 450)
     for url in CATEGORY_URLS:
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_timeout(1500)
 
         last_count = -1
         rounds_without_growth = 0
-        for _ in range(150):
+        for _ in range(200):
             hrefs = page.eval_on_selector_all(
                 'a[href*="/product/"]', "els => els.map(e => e.href)"
             )
@@ -53,14 +54,11 @@ def collect_product_links(page):
             else:
                 rounds_without_growth += 1
 
-            if rounds_without_growth >= 8:
+            if rounds_without_growth >= 10:
                 break
 
-            try:
-                page.mouse.wheel(0, 4000)
-            except Exception:
-                page.evaluate("window.scrollBy(0, 4000)")
-            page.wait_for_timeout(700)
+            page.mouse.wheel(0, 2500)
+            page.wait_for_timeout(600)
 
         print(f"  - {url}: {len(links)}개 누적 (카테고리별 진행)")
     return sorted(links)
