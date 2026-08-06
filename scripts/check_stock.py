@@ -38,6 +38,9 @@ def get_stock_for_product(page, url):
     data = page.evaluate(
         "() => (typeof option_stock_data !== 'undefined') ? option_stock_data : null"
     )
+    raw_price = page.evaluate(
+        "() => (typeof product_price !== 'undefined') ? product_price : null"
+    )
     name = None
     try:
         title = page.title()
@@ -45,15 +48,22 @@ def get_stock_for_product(page, url):
     except Exception:
         pass
 
+    price = None
+    if raw_price is not None:
+        try:
+            price = int(str(raw_price).replace(",", "").strip())
+        except Exception:
+            price = None
+
     if not data:
-        return None, name
+        return None, name, price
     if isinstance(data, str):
         data = json.loads(data)
 
     result = {}
     for _, v in data.items():
         result[v["option_value"]] = v["stock_number"]
-    return result, name
+    return result, name, price
 
 
 def send_telegram(token, chat_id, text):
@@ -85,13 +95,20 @@ def load_previous():
     return saved.get("products", {})
 
 
+def fmt_won(v):
+    return f"{v:,}원"
+
+
 def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 
     prev_products = load_previous()
     current_products = {}
-    change_lines = []
+
+    change_blocks = []
+    price_change_lines = []
+    soldout_lines = []
     warning_lines = []
     error_lines = []
 
@@ -104,7 +121,7 @@ def main():
 
         for url in product_urls:
             try:
-                stock, name = get_stock_for_product(page, url)
+                stock, name, price = get_stock_for_product(page, url)
             except Exception as e:
                 error_lines.append(f"{url}: {e}")
                 continue
@@ -113,16 +130,34 @@ def main():
                 continue
 
             name = name or url
-            current_products[url] = {"name": name, "stock": stock}
+            current_products[url] = {"name": name, "price": price, "stock": stock}
 
-            prev_stock = prev_products.get(url, {}).get("stock", {})
+            prev_entry = prev_products.get(url, {})
+            prev_stock = prev_entry.get("stock", {})
+            prev_price = prev_entry.get("price")
+
+            option_lines = []
             for size, qty in stock.items():
                 diff = qty - prev_stock.get(size, qty)
                 if diff != 0:
                     sign = "+" if diff > 0 else ""
-                    change_lines.append(f"{name} - {size}: {qty}\uac1c ({sign}{diff})")
-                if qty < LOW_STOCK_THRESHOLD:
-                    warning_lines.append(f"\u26a0\ufe0f {name} - {size}: {qty}\uac1c")
+                    option_lines.append(f"  - {size}: {qty}개 ({sign}{diff})")
+
+                if qty == 0:
+                    soldout_lines.append(f"{name} - {size}")
+                elif qty < LOW_STOCK_THRESHOLD:
+                    warning_lines.append(f"⚠️ {name} - {size}: {qty}개")
+
+            if option_lines:
+                price_str = f" ({fmt_won(price)})" if price is not None else ""
+                change_blocks.append(f"■ {name}{price_str}
+" + "
+".join(option_lines))
+
+            if price is not None and prev_price is not None and price != prev_price:
+                price_change_lines.append(
+                    f"{name}: {fmt_won(prev_price)} → {fmt_won(price)}"
+                )
 
             time.sleep(0.4)
 
@@ -132,19 +167,38 @@ def main():
     now = datetime.now(kst).strftime("%Y-%m-%d %H:%M KST")
 
     header = (
-        f"[\uc804\uc0c1\ud488 \uc7ac\uace0 \ud655\uc778] {now}\n"
-        f"\ud655\uc778\ub41c \uc0c1\ud488: {len(current_products)}\uac1c"
+        f"[전상품 재고 확인] {now}
+"
+        f"확인된 상품: {len(current_products)}개"
     )
 
     messages = [header]
-    if change_lines:
-        messages.append("[\uc7ac\uace0 \ubcc0\ub3d9]\n" + "\n".join(change_lines))
-    if warning_lines:
-        messages.append("[50\uac1c \ubbf8\ub9cc \uc7ac\uace0 \uacbd\uace0]\n" + "\n".join(warning_lines))
-    if error_lines:
-        messages.append("[\uc624\ub958]\n" + "\n".join(error_lines))
+    if change_blocks:
+        messages.append("[재고 변동]
 
-    full_message = "\n\n".join(messages)
+" + "
+
+".join(change_blocks))
+    if price_change_lines:
+        messages.append("[가격 변동]
+" + "
+".join(price_change_lines))
+    if soldout_lines:
+        messages.append("[품절 상품]
+" + "
+".join(soldout_lines))
+    if warning_lines:
+        messages.append("[50개 미만 재고 경고]
+" + "
+".join(warning_lines))
+    if error_lines:
+        messages.append("[오류]
+" + "
+".join(error_lines))
+
+    full_message = "
+
+".join(messages)
     print(full_message)
 
     if token and chat_id:
