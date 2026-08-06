@@ -20,9 +20,26 @@ LOW_STOCK_THRESHOLD = 50
 PRODUCT_URL_RE = re.compile(r"/product/([^/]+/\d+)/")
 EXCLUDE_KEYWORDS = ["마킹키트"]
 
+REMOVE_OVERLAYS_JS = """
+() => {
+    const selectors = ['.worldshipLayer', '.xans-layout-multishopshipping', '.ec-base-layer'];
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.style.display = 'none';
+        });
+    });
+}
+"""
+
 def is_excluded(url):
     decoded = urllib.parse.unquote(url)
     return any(kw in decoded for kw in EXCLUDE_KEYWORDS)
+
+def dismiss_overlays(page):
+    try:
+        page.evaluate(REMOVE_OVERLAYS_JS)
+    except Exception:
+        pass
 
 def collect_product_links(page):
     links = set()
@@ -30,6 +47,7 @@ def collect_product_links(page):
     for url in CATEGORY_URLS:
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_timeout(1500)
+        dismiss_overlays(page)
 
         last_count = -1
         rounds_without_growth = 0
@@ -57,6 +75,7 @@ def collect_product_links(page):
             if rounds_without_growth >= 10:
                 break
 
+            dismiss_overlays(page)
             page.mouse.wheel(0, 2500)
             page.wait_for_timeout(600)
 
