@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
@@ -16,20 +17,52 @@ CATEGORY_URLS = [
 
 HISTORY_FILE = "data/stock_history.json"
 LOW_STOCK_THRESHOLD = 50
-PRODUCT_URL_RE = re.compile(r"/product/[^/]+/\d+/category/\d+/display/\d+/")
+PRODUCT_URL_RE = re.compile(r"/product/([^/]+/\d+)/")
+EXCLUDE_KEYWORDS = ["마킹키트"]
+
+
+def is_excluded(url):
+    decoded = urllib.parse.unquote(url)
+    return any(kw in decoded for kw in EXCLUDE_KEYWORDS)
 
 
 def collect_product_links(page):
     links = set()
     for url in CATEGORY_URLS:
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        hrefs = page.eval_on_selector_all(
-            'a[href*="/product/"]', "els => els.map(e => e.href)"
-        )
-        for h in hrefs:
-            h = h.split("?")[0]
-            if PRODUCT_URL_RE.search(h):
-                links.add(h)
+        page.wait_for_timeout(1000)
+
+        prev_count = -1
+        stable_rounds = 0
+        for _ in range(80):
+            hrefs = page.eval_on_selector_all(
+                'a[href*="/product/"]', "els => els.map(e => e.href)"
+            )
+            for h in hrefs:
+                h = h.split("?")[0]
+                m = PRODUCT_URL_RE.search(h)
+                if not m:
+                    continue
+                canonical = f"https://nolmdshop.com/product/{m.group(1)}/"
+                if is_excluded(canonical):
+                    continue
+                links.add(canonical)
+
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(600)
+
+            at_bottom = page.evaluate(
+                "() => window.scrollY + window.innerHeight >= document.body.scrollHeight - 5"
+            )
+            current_count = len(links)
+            if current_count == prev_count:
+                stable_rounds += 1
+            else:
+                stable_rounds = 0
+            prev_count = current_count
+
+            if at_bottom and stable_rounds >= 2:
+                break
     return sorted(links)
 
 
@@ -117,7 +150,7 @@ def main():
         page = browser.new_page()
 
         product_urls = collect_product_links(page)
-        print(f"Found {len(product_urls)} products across categories")
+        print(f"Found {len(product_urls)} products across categories (마킹키트 제외)")
 
         for url in product_urls:
             try:
