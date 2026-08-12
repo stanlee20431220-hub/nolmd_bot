@@ -1,4 +1,18 @@
 {
-  "last_checked": "2026-08-11 19:07 KST",
-  "products": {}
+  "last_checked": "2026-08-12 10:19 KST",
+  "products": {
+    "https://nolmdshop.com/product/%EB%91%90%EC%82%B0%EB%B2%A0%EC%96%B4%EC%8A%A4-%EC%9D%BC%EB%B0%98%ED%98%95-%EC%9C%A0%EB%8B%88%ED%8F%BC%ED%99%88/1611/": {
+      "name": "[두산베어스] 일반형 유니폼(홈)",
+      "price": 72000,
+      "stock": {
+        "85": 0,
+        "90": 0,
+        "95": 0,
+        "100": 0,
+        "105": 0,
+        "110": 0,
+        "120": 0
+      }
+    }
+  }
 }
