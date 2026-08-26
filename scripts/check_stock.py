@@ -46,45 +46,117 @@ def dismiss_overlays(page):
     except Exception:
         pass
 
+MAX_PAGES_PER_CATEGORY = 30  # 안전장치 (무한루프 방지)
+
+def scrape_links_on_current_page(page, links):
+    """현재 로드된 페이지에서 상품 링크를 수집 + 스크롤로 지연로딩 요소도 추가 수집."""
+    last_count = -1
+    rounds_without_growth = 0
+    for _ in range(60):
+        hrefs = page.eval_on_selector_all(
+            'a[href*="/product/"]', "els => els.map(e => e.href)"
+        )
+        for h in hrefs:
+            h = h.split("?")[0]
+            m = PRODUCT_URL_RE.search(h)
+            if not m:
+                continue
+            canonical = f"{PRODUCT_DOMAIN}/product/{m.group(1)}/"
+            if is_excluded(canonical):
+                continue
+            links.add(canonical)
+
+        current_count = len(links)
+        if current_count > last_count:
+            last_count = current_count
+            rounds_without_growth = 0
+        else:
+            rounds_without_growth += 1
+
+        if rounds_without_growth >= 5:
+            break
+
+        dismiss_overlays(page)
+        page.mouse.wheel(0, 2500)
+        page.wait_for_timeout(500)
+
+def find_next_page_url(page):
+    """카페24 카테고리 페이지네이션 UI에서 '다음 페이지' 링크를 찾아 반환.
+    없으면 None."""
+    try:
+        return page.evaluate(
+            """
+            () => {
+                const containers = document.querySelectorAll(
+                    '.xans-product-normalpaging, .ec-base-paginate, .paging, [class*=paging]'
+                );
+                for (const box of containers) {
+                    const anchors = Array.from(box.querySelectorAll('a'));
+                    // '다음' / 'next' 텍스트를 가진 링크 우선
+                    let next = anchors.find(a => {
+                        const t = (a.textContent || '').trim();
+                        return t.includes('다음') || t.toLowerCase().includes('next');
+                    });
+                    if (next) {
+                        const href = next.getAttribute('href');
+                        if (href && href !== '#none' && href !== '#' && !href.startsWith('javascript')) {
+                            return next.href;
+                        }
+                    }
+                }
+                // '다음' 링크가 없으면, 현재 활성 페이지 번호보다 큰 숫자 링크를 찾음
+                for (const box of containers) {
+                    const active = box.querySelector('strong, .on, .active');
+                    const activeNum = active ? parseInt((active.textContent || '').trim(), 10) : null;
+                    if (!activeNum) continue;
+                    const anchors = Array.from(box.querySelectorAll('a'));
+                    for (const a of anchors) {
+                        const n = parseInt((a.textContent || '').trim(), 10);
+                        if (!isNaN(n) && n === activeNum + 1) {
+                            const href = a.getAttribute('href');
+                            if (href && href !== '#none' && href !== '#' && !href.startsWith('javascript')) {
+                                return a.href;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            """
+        )
+    except Exception:
+        return None
+
 def collect_product_links(page):
     links = set()
     page.mouse.move(700, 450)
-    for url in CATEGORY_URLS:
-        page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(1500)
-        dismiss_overlays(page)
+    for base_url in CATEGORY_URLS:
+        current_url = base_url
+        visited = set()
 
-        last_count = -1
-        rounds_without_growth = 0
-        for _ in range(200):
-            hrefs = page.eval_on_selector_all(
-                'a[href*="/product/"]', "els => els.map(e => e.href)"
-            )
-            for h in hrefs:
-                h = h.split("?")[0]
-                m = PRODUCT_URL_RE.search(h)
-                if not m:
-                    continue
-                canonical = f"{PRODUCT_DOMAIN}/product/{m.group(1)}/"
-                if is_excluded(canonical):
-                    continue
-                links.add(canonical)
+        for _ in range(MAX_PAGES_PER_CATEGORY):
+            if current_url in visited:
+                break
+            visited.add(current_url)
 
-            current_count = len(links)
-            if current_count > last_count:
-                last_count = current_count
-                rounds_without_growth = 0
-            else:
-                rounds_without_growth += 1
+            page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(1200)
+            dismiss_overlays(page)
 
-            if rounds_without_growth >= 10:
+            before_count = len(links)
+            scrape_links_on_current_page(page, links)
+            after_count = len(links)
+
+            print(f"  - {current_url}: 누적 {after_count}개")
+
+            next_url = find_next_page_url(page)
+
+            # 다음 페이지가 없거나, 페이지를 넘겼는데도 새 상품이 전혀 없으면 종료
+            if not next_url or (after_count == before_count and next_url in visited):
                 break
 
-            dismiss_overlays(page)
-            page.mouse.wheel(0, 2500)
-            page.wait_for_timeout(600)
+            current_url = next_url
 
-        print(f"  - {url}: {len(links)}개 누적 (카테고리별 진행)")
     return sorted(links)
 
 def parse_option_stock(raw_option_data):
