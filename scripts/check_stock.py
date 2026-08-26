@@ -342,8 +342,10 @@ def main():
     kst = timezone(timedelta(hours=9))
     now = datetime.now(kst).strftime("%Y-%m-%d %H:%M KST")
 
+    SCRIPT_VERSION = "v3-namelink"  # 배포 확인용 - 이 값이 메시지에 안 보이면 구버전이 실행된 것
+
     header = (
-        f"[전상품 재고 확인] {now}\n"
+        f"[전상품 재고 확인] {now} ({SCRIPT_VERSION})\n"
         f"확인된 상품: {len(current_products)}개"
     )
 
