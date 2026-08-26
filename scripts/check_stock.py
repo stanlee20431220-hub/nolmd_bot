@@ -204,10 +204,18 @@ def get_stock_for_product(page, url):
 
     name = None
     try:
-        title = page.title()
-        name = title.split(" - ")[0].strip()
+        name = page.evaluate(
+            "() => (typeof product_name !== 'undefined' && product_name) ? product_name : null"
+        )
     except Exception:
         pass
+
+    if not name:
+        try:
+            title = page.title()
+            name = title.split(" - ")[0].strip()
+        except Exception:
+            pass
 
     price = None
     if raw_price is not None:
@@ -342,7 +350,7 @@ def main():
     kst = timezone(timedelta(hours=9))
     now = datetime.now(kst).strftime("%Y-%m-%d %H:%M KST")
 
-    SCRIPT_VERSION = "v3-namelink"  # 배포 확인용 - 이 값이 메시지에 안 보이면 구버전이 실행된 것
+    SCRIPT_VERSION = "v4-namefix"  # 배포 확인용 - 이 값이 메시지에 안 보이면 구버전이 실행된 것
 
     header = (
         f"[전상품 재고 확인] {now} ({SCRIPT_VERSION})\n"
