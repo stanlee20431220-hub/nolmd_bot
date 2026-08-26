@@ -1,9 +1,8 @@
-name: Stock Check
+name: Twinscorestore Stock Check
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-    - cron: '0 9 * * *'
+    - cron: "0 */3 * * *"  # 3시간마다 (전체 상품 크롤링이라 너무 자주 돌리지 않는 게 좋음)
   workflow_dispatch: {}
 
 permissions:
@@ -12,28 +11,31 @@ permissions:
 jobs:
   check-stock:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
-          pip install playwright
-          python -m playwright install --with-deps chromium
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
 
       - name: Run stock check
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/check_stock.py
+        run: python check_stock.py
 
       - name: Commit updated history
         run: |
-          git config user.name "stock-bot"
+          git config user.name "stock-monitor-bot"
           git config user.email "actions@github.com"
           git add data/stock_history.json
-          git diff --quiet --cached || git commit -m "Update stock history [skip ci]"
+          git diff --quiet --cached || git commit -m "재고 기록 업데이트 [skip ci]"
           git push
