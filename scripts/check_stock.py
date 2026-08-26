@@ -1,3 +1,4 @@
+import html
 import json
 import os
 import re
@@ -86,20 +87,49 @@ def collect_product_links(page):
         print(f"  - {url}: {len(links)}개 누적 (카테고리별 진행)")
     return sorted(links)
 
+def parse_option_stock(raw_option_data):
+    """option_stock_data를 {옵션라벨: 재고수} 형태로 변환.
+    실패 시 (None, 진단정보) 반환."""
+    data = raw_option_data
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except Exception as e:
+            return None, f"JSON 파싱 실패({type(e).__name__}): {str(raw_option_data)[:200]}"
+
+    if not isinstance(data, dict):
+        return None, f"예상치 못한 최상위 타입({type(data).__name__}): {str(data)[:200]}"
+
+    result = {}
+    unparsed_entries = []
+    for key, v in data.items():
+        if not isinstance(v, dict):
+            unparsed_entries.append(f"{key}={str(v)[:60]}")
+            continue
+        stock = v.get("stock_number")
+        label = v.get("option_value") or v.get("option_text") or str(key)
+        result[label] = stock if stock is not None else 0
+
+    if result:
+        return result, None
+    if unparsed_entries:
+        return {"재고": 0}, f"항목 형식이 달라 재고 0으로 처리함: {unparsed_entries[:5]}"
+
+    return None, "option_stock_data는 있었지만 파싱 가능한 항목이 없음"
+
 def get_stock_for_product(page, url):
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
 
-    # 옵션 있는 상품
     option_data = page.evaluate(
         "() => (typeof option_stock_data !== 'undefined') ? option_stock_data : null"
     )
-    # 옵션 없는 단일상품 (카페24는 이 경우 별도 변수를 씀)
     single_data = page.evaluate(
         "() => (typeof single_option_stock_data !== 'undefined') ? single_option_stock_data : null"
     )
     raw_price = page.evaluate(
         "() => (typeof product_price !== 'undefined') ? product_price : null"
     )
+
     name = None
     try:
         title = page.title()
@@ -114,31 +144,40 @@ def get_stock_for_product(page, url):
         except Exception:
             price = None
 
-    # 1) 옵션 있는 상품
-    if option_data:
-        data = option_data
-        if isinstance(data, str):
-            data = json.loads(data)
-        result = {}
-        for _, v in data.items():
-            result[v["option_value"]] = v["stock_number"]
-        return result, name, price
+    diagnostic = None
 
-    # 2) 옵션 없는 단일상품
+    if option_data:
+        result, diagnostic = parse_option_stock(option_data)
+        if result is not None:
+            return result, name, price, diagnostic
+
     if single_data:
         data = single_data
         if isinstance(data, str):
-            data = json.loads(data)
-        stock_number = data.get("stock_number")
-        if stock_number is not None:
-            return {"재고": stock_number}, name, price
+            try:
+                data = json.loads(data)
+            except Exception as e:
+                diagnostic = f"single_option_stock_data JSON 파싱 실패({type(e).__name__})"
+                data = {}
+        if isinstance(data, dict):
+            stock_number = data.get("stock_number")
+            if stock_number is not None:
+                return {"재고": stock_number}, name, price, None
 
-    # 둘 다 없으면 재고 정보를 못 찾은 것
-    return None, name, price
+    return None, name, price, (diagnostic or "option_stock_data / single_option_stock_data 둘 다 못 찾음")
+
+def html_link(name, url):
+    safe_name = html.escape(name or url, quote=False)
+    return f'<a href="{html.escape(url, quote=True)}">{safe_name}</a>'
 
 def send_telegram(token, chat_id, text):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = json.dumps({"chat_id": chat_id, "text": text}).encode("utf-8")
+    payload = json.dumps({
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }).encode("utf-8")
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     urllib.request.urlopen(req, timeout=15)
 
@@ -174,7 +213,6 @@ def main():
 
     change_blocks = []
     price_change_lines = []
-    soldout_lines = []
     warning_lines = []
     error_lines = []
 
@@ -187,15 +225,19 @@ def main():
 
         for url in product_urls:
             try:
-                stock, name, price = get_stock_for_product(page, url)
+                stock, name, price, diagnostic = get_stock_for_product(page, url)
             except Exception as e:
-                error_lines.append(f"{url}: {e}")
-                continue
-
-            if stock is None:
+                error_lines.append(f"{url}: {type(e).__name__}: {e}")
                 continue
 
             name = name or url
+            link = html_link(name, url)
+
+            if stock is None:
+                detail = f" ({diagnostic})" if diagnostic else ""
+                error_lines.append(f"{link}{detail}")
+                continue
+
             current_products[url] = {"name": name, "price": price, "stock": stock}
 
             prev_entry = prev_products.get(url, {})
@@ -209,18 +251,16 @@ def main():
                     sign = "+" if diff > 0 else ""
                     option_lines.append(f"  - {size}: {qty}개 ({sign}{diff})")
 
-                if qty == 0:
-                    soldout_lines.append(f"{name} - {size}")
-                elif qty < LOW_STOCK_THRESHOLD:
-                    warning_lines.append(f"⚠️ {name} - {size}: {qty}개")
+                if qty > 0 and qty < LOW_STOCK_THRESHOLD:
+                    warning_lines.append(f"⚠️ {link} - {size}: {qty}개")
 
             if option_lines:
                 price_str = f" ({fmt_won(price)})" if price is not None else ""
-                change_blocks.append(f"■ {name}{price_str}\n" + "\n".join(option_lines))
+                change_blocks.append(f"■ {link}{price_str}\n" + "\n".join(option_lines))
 
             if price is not None and prev_price is not None and price != prev_price:
                 price_change_lines.append(
-                    f"{name}: {fmt_won(prev_price)} → {fmt_won(price)}"
+                    f"{link}: {fmt_won(prev_price)} → {fmt_won(price)}"
                 )
 
             time.sleep(0.4)
@@ -240,8 +280,6 @@ def main():
         messages.append("[재고 변동]\n\n" + "\n\n".join(change_blocks))
     if price_change_lines:
         messages.append("[가격 변동]\n" + "\n".join(price_change_lines))
-    if soldout_lines:
-        messages.append("[품절 상품]\n" + "\n".join(soldout_lines))
     if warning_lines:
         messages.append(f"[{LOW_STOCK_THRESHOLD}개 미만 재고 경고]\n" + "\n".join(warning_lines))
     if error_lines:
