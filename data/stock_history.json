@@ -1,5 +1,5 @@
 {
-  "last_checked": "2026-09-06 19:39 KST",
+  "last_checked": "2026-09-07 00:15 KST",
   "products": {
     "https://twinscorestore.co.kr/product/%EB%A7%88%EB%A3%A8%EB%8A%94%EA%B0%95%EC%A5%90-%EB%9E%9C%EB%8D%A4-%EC%95%84%ED%81%AC%EB%A6%B4-%ED%82%A4%EB%A7%81multi/170/": {
       "name": "마루는강쥐 랜덤 아크릴 키링(MULTI)",
@@ -292,7 +292,7 @@
       "name": "먼작귀 콜라보 DIY 캐릭터 머리띠(MULTI)",
       "price": 23000,
       "stock": {
-        "재고": 162
+        "재고": 161
       }
     },
     "https://twinscorestore.co.kr/product/%EC%9C%84%EC%8B%9C%EC%BA%A3-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EA%B7%B8%EB%9E%98%ED%94%BD-%EB%B0%98%ED%8C%94-%ED%8B%B0%EC%85%94%EC%B8%A0black/259/": {
@@ -454,14 +454,14 @@
       "name": "최고심 콜라보 소프트볼(GREEN)",
       "price": 9000,
       "stock": {
-        "재고": 60
+        "재고": 59
       }
     },
     "https://twinscorestore.co.kr/product/%EC%B5%9C%EA%B3%A0%EC%8B%AC-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%86%8C%ED%94%84%ED%8A%B8%EB%B3%BCpink/41/": {
       "name": "최고심 콜라보 소프트볼(PINK)",
       "price": 9000,
       "stock": {
-        "재고": 155
+        "재고": 154
       }
     },
     "https://twinscorestore.co.kr/product/%EC%B5%9C%EA%B3%A0%EC%8B%AC-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%9D%B8%ED%98%95-%EB%A8%B8%EB%A6%AC%EB%9D%A0purple/45/": {
@@ -609,7 +609,7 @@
       "name": "태닝 헬로키티 콜라보 도트 마켓백(PINK)",
       "price": 12000,
       "stock": {
-        "재고": 73
+        "재고": 75
       }
     },
     "https://twinscorestore.co.kr/product/%ED%83%9C%EB%8B%9D-%ED%97%AC%EB%A1%9C%ED%82%A4%ED%8B%B0-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EB%9E%9C%EB%8D%A4-%ED%94%BC%EA%B7%9C%EC%96%B4-%ED%82%A4%EB%A7%81multi/352/": {
@@ -756,7 +756,7 @@
       "name": "헬로키티 콜라보 체크무늬 반다나(PINK)",
       "price": 8000,
       "stock": {
-        "재고": 24
+        "재고": 23
       }
     },
     "https://twinscorestore.co.kr/product/%ED%97%AC%EB%A1%9C%ED%82%A4%ED%8B%B0-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%BA%90%EB%A6%AD%ED%84%B0-%EB%B3%B4%EB%83%89%EB%B0%B1whitepink/127/": {
@@ -870,7 +870,7 @@
       "name": "호빵맨 콜라보 응원머플러(SKY BLUE)",
       "price": 20000,
       "stock": {
-        "재고": 0
+        "재고": 2
       }
     },
     "https://twinscorestore.co.kr/product/%ED%98%B8%EB%B9%B5%EB%A7%A8-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%9E%90%EC%B9%B4%EB%93%9C-%EB%B0%B0%EC%83%89-%EC%A7%91%EC%97%85ivory/369/": {
@@ -965,7 +965,7 @@
       "name": "LG트윈스 태닝피규어키링 V5_춘식이",
       "price": 16000,
       "stock": {
-        "재고": 471
+        "재고": 470
       }
     }
   }
