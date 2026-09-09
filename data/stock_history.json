@@ -1,5 +1,5 @@
 {
-  "last_checked": "2026-09-09 20:02 KST",
+  "last_checked": "2026-09-10 01:18 KST",
   "products": {
     "https://twinscorestore.co.kr/product/%EB%A7%88%EB%A3%A8%EB%8A%94%EA%B0%95%EC%A5%90-%EB%9E%9C%EB%8D%A4-%EC%95%84%ED%81%AC%EB%A6%B4-%ED%82%A4%EB%A7%81multi/170/": {
       "name": "마루는강쥐 랜덤 아크릴 키링(MULTI)",
@@ -12,7 +12,7 @@
       "name": "마루는강쥐 콜라보 강쥐마루 뱃지(MULTI)",
       "price": 8000,
       "stock": {
-        "재고": 376
+        "재고": 375
       }
     },
     "https://twinscorestore.co.kr/product/%EB%A7%88%EB%A3%A8%EB%8A%94%EA%B0%95%EC%A5%90-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EA%B0%95%EC%A5%90%EB%A7%88%EB%A3%A8-%EC%9D%B8%ED%98%95-%ED%82%A4%EB%A7%81multi/159/": {
@@ -33,7 +33,7 @@
       "name": "마루는강쥐 콜라보 마루 페이스 뱃지(MULTI)",
       "price": 8000,
       "stock": {
-        "재고": 247
+        "재고": 246
       }
     },
     "https://twinscorestore.co.kr/product/%EB%A7%88%EB%A3%A8%EB%8A%94%EA%B0%95%EC%A5%90-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EB%B3%BC%EC%BA%A1yellow/147/": {
@@ -74,7 +74,7 @@
       "name": "마루는강쥐 콜라보 응원마루 뱃지(MULTI)",
       "price": 8000,
       "stock": {
-        "재고": 22
+        "재고": 21
       }
     },
     "https://twinscorestore.co.kr/product/%EB%A7%88%EB%A3%A8%EB%8A%94%EA%B0%95%EC%A5%90-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%9D%B4%EB%AA%A8%ED%8B%B0%EC%BD%98-%EC%8A%A4%ED%8B%B0%EC%BB%A4%ED%8C%A9%EC%A7%81%EA%B4%80/166/": {
@@ -192,7 +192,7 @@
       "name": "먼작귀 콜라보 캐릭터 다꾸 스티커(MULTI)",
       "price": 4000,
       "stock": {
-        "재고": 140
+        "재고": 139
       }
     },
     "https://twinscorestore.co.kr/product/%EB%A8%BC%EC%9E%91%EA%B7%80-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%BA%90%EB%A6%AD%ED%84%B0-%EB%A9%94%EA%B0%80-%EC%9D%91%EC%9B%90%EB%B0%B0%ED%8A%B8white/245/": {
@@ -770,14 +770,14 @@
       "name": "헬로키티 콜라보 캐릭터 유니폼 파우치백(WHITE/PINK)",
       "price": 25000,
       "stock": {
-        "재고": 30
+        "재고": 26
       }
     },
     "https://twinscorestore.co.kr/product/%ED%97%AC%EB%A1%9C%ED%82%A4%ED%8B%B0-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%BA%90%EB%A6%AD%ED%84%B0-%EC%A0%84%EC%82%AC%EB%A8%B8%ED%94%8C%EB%9F%ACwhiteblack/98/": {
       "name": "헬로키티 콜라보 캐릭터 전사머플러(WHITE/BLACK)",
       "price": 20000,
       "stock": {
-        "재고": 134
+        "재고": 133
       }
     },
     "https://twinscorestore.co.kr/product/%ED%97%AC%EB%A1%9C%ED%82%A4%ED%8B%B0-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%ED%8C%A8%EC%85%98-%EC%9C%A0%EB%8B%88%ED%8F%BC-%ED%8C%8C%EC%9A%B0%EC%B9%98%EB%B0%B1whitepink/112/": {
@@ -843,7 +843,7 @@
       "name": "호빵맨 콜라보 엠블럼 뱃지(MULTI)",
       "price": 8000,
       "stock": {
-        "재고": 46
+        "재고": 43
       }
     },
     "https://twinscorestore.co.kr/product/%ED%98%B8%EB%B9%B5%EB%A7%A8-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%97%B4%EC%A0%91%EC%B0%A9%ED%8C%A8%EC%B9%98-%EC%84%B8%EA%B7%A0%EB%A7%A8%EC%A7%A4%EB%9E%91%EC%9D%B4multi/373/": {
@@ -919,21 +919,21 @@
       "name": "호빵맨 콜라보 캐릭터 뱃지(세균맨)",
       "price": 8000,
       "stock": {
-        "재고": 54
+        "재고": 50
       }
     },
     "https://twinscorestore.co.kr/product/%ED%98%B8%EB%B9%B5%EB%A7%A8-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%BA%90%EB%A6%AD%ED%84%B0-%EB%B1%83%EC%A7%80%EC%A7%A4%EB%9E%91%EC%9D%B4/378/": {
       "name": "호빵맨 콜라보 캐릭터 뱃지(짤랑이)",
       "price": 8000,
       "stock": {
-        "재고": 256
+        "재고": 251
       }
     },
     "https://twinscorestore.co.kr/product/%ED%98%B8%EB%B9%B5%EB%A7%A8-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%BA%90%EB%A6%AD%ED%84%B0-%EB%B1%83%EC%A7%80%ED%98%B8%EB%B9%B5%EB%A7%A8/376/": {
       "name": "호빵맨 콜라보 캐릭터 뱃지(호빵맨)",
       "price": 8000,
       "stock": {
-        "재고": 50
+        "재고": 45
       }
     },
     "https://twinscorestore.co.kr/product/%ED%98%B8%EB%B9%B5%EB%A7%A8-%EC%BD%9C%EB%9D%BC%EB%B3%B4-%EC%BA%90%EB%A6%AD%ED%84%B0-%EC%97%B4%EC%A0%91%EC%B0%A9%ED%8C%A8%EC%B9%98-%EC%84%B8%ED%8A%B8multi/374/": {
